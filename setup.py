@@ -1,0 +1,34 @@
+"""
+Flarf: Flask Request Filter
+-------------
+filter chosen params from request and make them accessible on g
+"""
+from setuptools import setup
+from flask_flarf import __version__
+
+setup(
+    name='Flask Flarf',
+    version=__version__,
+    url='',
+    license='MIT',
+    author='Thrisp/Hurrata',
+    author_email='blueblank@gmail.com',
+    description='a filter flask requests to g',
+    long_description=__doc__,
+    packages=['flask_flarf'],
+    zip_safe=False,
+    platforms='any',
+    install_requires=[
+        'Flask>=0.9'
+    ],
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Environment :: Web Environment',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+        'Topic :: Software Development :: Libraries :: Python Modules'
+    ]
+)
