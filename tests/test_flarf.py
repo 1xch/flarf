@@ -43,7 +43,7 @@ class FlarfTestCase(unittest.TestCase):
                 self.request_path = request.path
             def which_path(self):
                 return self.request_path
-        Flarf(self.pre_app, preprocessor_cls=TestPreProcessRequest)
+        Flarf(self.pre_app, preprocess_cls=TestPreProcessRequest)
         with self.pre_app.test_request_context('/'):
             self.assertTrue(request.path == '/')
             self.pre_app.preprocess_request()
@@ -61,7 +61,7 @@ class FlarfTestCase(unittest.TestCase):
         @self.pre_app.route('/passme')
         def passme():
             return g.__dict__
-        Flarf(self.pre_app, pass_routes=['passme'])
+        Flarf(self.pre_app, preprocess_pass=['passme'])
         with self.pre_app.test_request_context('/passme'):
             self.pre_app.preprocess_request()
             with self.assertRaises(AttributeError):
@@ -70,7 +70,7 @@ class FlarfTestCase(unittest.TestCase):
     def test_additional_filtering(self):
         def do_something_extra(request):
             return (request.path, request.args['what'])
-        Flarf(self.pre_app, additional_filtering={'additional': do_something_extra})
+        Flarf(self.pre_app, preprocess_additional={'additional': do_something_extra})
         with self.pre_app.test_request_context('/?what=wat'):
             self.pre_app.preprocess_request()
             self.assertEqual(g.additional, (u'/', 'wat'))
