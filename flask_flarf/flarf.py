@@ -5,34 +5,34 @@ from werkzeug import LocalProxy
 _flarf = LocalProxy(lambda: current_app.extensions['flarf'])
 
 
-class PreProcessRequest(object):
+class FilterRequest(object):
     def __init__(self, request):
-        if _flarf.preprocess_params:
-            for arg in _flarf.preprocess_params:
+        if _flarf.filter_params:
+            for arg in _flarf.filter_params:
                 setattr(self, arg, getattr(request, arg, None))
 
 
-def preprocess_to_g(request):
-    g.preprocessed = _flarf.preprocess_cls(request)
+def filter_to_g(request):
+    g.preprocessed = _flarf.filter_cls(request)
     _flarf.additional_filter(request)
 
 
 class Flarf(object):
     def __init__(self, app=None,
-                       preprocess_cls=PreProcessRequest,
-                       preprocess_params=None,
-                       preprocess_func=preprocess_to_g,
-                       preprocess_skip=['static'],
-                       preprocess_pass=None,
-                       preprocess_additional=None):
+                       filter_cls=FilterRequest,
+                       filter_params=None,
+                       filter_func=filter_to_g,
+                       filter_skip=['static'],
+                       filter_pass=None,
+                       filter_additional=None):
         self.app = app
-        self.preprocess_cls = preprocess_cls
-        self.preprocess_params = preprocess_params
-        self.preprocess_func = preprocess_func
-        self.preprocess_skip = preprocess_skip
-        if preprocess_pass:
-            self.preprocess_skip.extend(preprocess_pass)
-        self.preprocess_additional = preprocess_additional
+        self.filter_cls = filter_cls
+        self.filter_params = filter_params
+        self.filter_func = filter_func
+        self.filter_skip = filter_skip
+        if filter_pass:
+            self.filter_skip.extend(filter_pass)
+        self.filter_additional = filter_additional
 
         if app is not None:
             self.app = app
@@ -41,15 +41,15 @@ class Flarf(object):
             self.app = None
 
     def init_app(self, app):
-        def preprocess_request(preprocess_func=self.preprocess_func):
+        def flarf_filter_request(filter_func=self.filter_func):
             r = _request_ctx_stack.top.request
             request_endpoint = str(r.url_rule.endpoint).rsplit('.')[-1]
-            if request_endpoint not in _flarf.preprocess_skip:
-                preprocess_func(r)
-        app.before_request(preprocess_request)
+            if request_endpoint not in _flarf.filter_skip:
+                filter_func(r)
+        app.before_request(flarf_filter_request)
         app.extensions['flarf'] = self
 
     def additional_filter(self, request):
-        if self.preprocess_additional:
-            for k,v in self.preprocess_additional.iteritems():
+        if self.filter_additional:
+            for k,v in self.filter_additional.iteritems():
                 setattr(g, k, v(request))
