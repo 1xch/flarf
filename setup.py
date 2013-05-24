@@ -3,17 +3,18 @@ Flarf: Flask Request Filter
 -------------
 filter chosen params from request and make them accessible on g
 """
+
 from setuptools import setup
 from flask_flarf import __version__
 
 setup(
     name='Flask Flarf',
     version=__version__,
-    url='',
+    url='https://github.com/thrisp/flarf',
     license='MIT',
     author='Thrisp/Hurrata',
     author_email='blueblank@gmail.com',
-    description='a filter flask requests to g',
+    description='Customize and filter Flask request',
     long_description=__doc__,
     packages=['flask_flarf'],
     zip_safe=False,

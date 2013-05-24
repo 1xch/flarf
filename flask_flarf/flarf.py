@@ -1,6 +1,7 @@
 from flask import Blueprint, g, _request_ctx_stack, current_app
 from werkzeug import LocalProxy
 
+requested = LocalProxy(lambda: _request_ctx_stack.top.g.flarf_filtered)
 
 _flarf = LocalProxy(lambda: current_app.extensions['flarf'])
 

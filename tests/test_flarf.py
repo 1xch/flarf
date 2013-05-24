@@ -1,9 +1,8 @@
 from __future__ import with_statement
-
 import sys
 import os
 from flask import Flask, render_template, current_app, g, request
-from flask.ext.flarf import Flarf
+from flask.ext.flarf import Flarf, requested
 import unittest
 
 class FlarfTestCase(unittest.TestCase):
@@ -35,6 +34,7 @@ class FlarfTestCase(unittest.TestCase):
         with self.pre_app.test_request_context('/?argument=1'):
             self.pre_app.preprocess_request()
             self.assertEqual(g.flarf_filtered.args['argument'], '1')
+            self.assertEqual(g.flarf_filtered.path, '/')
 
     def test_custom_preprocess(self):
         class TestPreProcessRequest(object):
@@ -74,6 +74,13 @@ class FlarfTestCase(unittest.TestCase):
         with self.pre_app.test_request_context('/?what=wat'):
             self.pre_app.preprocess_request()
             self.assertEqual(g.additional, (u'/', 'wat'))
+
+    def test_requested(self):
+        Flarf(self.pre_app, filter_params=['path', 'args'])
+        with self.pre_app.test_request_context('/?ihave=ihas'):
+            self.app.preprocess_request()
+            self.assertIsNotNone(requested)
+            self.assertEqual(g.flarf_filtered.args['ihave'], requested.args['ihave'])
 
 if __name__ == '__main__':
     unittest.main()
