@@ -13,7 +13,7 @@ class FilterRequest(object):
 
 
 def filter_to_g(request):
-    g.preprocessed = _flarf.filter_cls(request)
+    g.flarf_filtered = _flarf.filter_cls(request)
     _flarf.additional_filter(request)
 
 

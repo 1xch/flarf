@@ -28,13 +28,13 @@ class FlarfTestCase(unittest.TestCase):
             self.assertTrue(request.path == '/')
             self.app.preprocess_request()
             self.assertIsNotNone(self.app.extensions['flarf'])
-            self.assertIsNotNone(getattr(g, 'preprocessed', None))
+            self.assertIsNotNone(getattr(g, 'flarf_filtered', None))
 
     def test_filter_params(self):
         Flarf(self.pre_app, filter_params=['path', 'args'])
         with self.pre_app.test_request_context('/?argument=1'):
             self.pre_app.preprocess_request()
-            self.assertEqual(g.preprocessed.args['argument'], '1')
+            self.assertEqual(g.flarf_filtered.args['argument'], '1')
 
     def test_custom_preprocess(self):
         class TestPreProcessRequest(object):
@@ -47,7 +47,7 @@ class FlarfTestCase(unittest.TestCase):
         with self.pre_app.test_request_context('/'):
             self.assertTrue(request.path == '/')
             self.pre_app.preprocess_request()
-            self.assertEqual(g.preprocessed.which_path(), '/')
+            self.assertEqual(g.flarf_filtered.which_path(), '/')
 
     def test_custom_filter_function(self):
         def custom_function_to_g(request):
