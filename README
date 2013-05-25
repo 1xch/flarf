@@ -1,1 +1,14 @@
-Customize and filter Flask request.
+Filters Flask and extracts some information for your use.
+
+Simplest example: 
+
+   from flask import Flask
+   from flask.ext.flarf import Flarf, requested
+
+   app = Flask(__name__)
+   Flarf(app, filter_params=["path", "args"])
+
+   @route("/")
+   def index():
+       return render_template("index.html", current_args=requested.args,
+                                            current_path=requested.path)

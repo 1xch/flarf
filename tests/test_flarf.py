@@ -24,7 +24,6 @@ class FlarfTestCase(unittest.TestCase):
 
     def test_request_filter(self):
         with self.app.test_request_context('/'):
-            self.assertTrue(request.path == '/')
             self.app.preprocess_request()
             self.assertIsNotNone(self.app.extensions['flarf'])
             self.assertIsNotNone(getattr(g, 'flarf_filtered', None))
@@ -39,23 +38,21 @@ class FlarfTestCase(unittest.TestCase):
     def test_custom_preprocess(self):
         class TestPreProcessRequest(object):
             def __init__(self, request):
-                self.request = request
                 self.request_path = request.path
             def which_path(self):
                 return self.request_path
         Flarf(self.pre_app, filter_cls=TestPreProcessRequest)
         with self.pre_app.test_request_context('/'):
-            self.assertTrue(request.path == '/')
             self.pre_app.preprocess_request()
             self.assertEqual(g.flarf_filtered.which_path(), '/')
 
     def test_custom_filter_function(self):
-        def custom_function_to_g(request):
-            g.custom_function_to_g = True
-        Flarf(self.pre_app, filter_func=custom_function_to_g)
+        def custom_function(request):
+            g.custom_function = True
+        Flarf(self.pre_app, filter_func=custom_function)
         with self.pre_app.test_request_context('/'):
             self.pre_app.preprocess_request()
-            self.assertTrue(g.custom_function_to_g)
+            self.assertTrue(g.custom_function)
 
     def test_pass_routes(self):
         @self.pre_app.route('/passme')
@@ -65,7 +62,7 @@ class FlarfTestCase(unittest.TestCase):
         with self.pre_app.test_request_context('/passme'):
             self.pre_app.preprocess_request()
             with self.assertRaises(AttributeError):
-                g.preprocessed
+                g.flarf_filtered
 
     def test_additional_filtering(self):
         def do_something_extra(request):
@@ -77,10 +74,10 @@ class FlarfTestCase(unittest.TestCase):
 
     def test_requested(self):
         Flarf(self.pre_app, filter_params=['path', 'args'])
-        with self.pre_app.test_request_context('/?ihave=ihas'):
+        with self.pre_app.test_request_context('/?what=wat'):
             self.app.preprocess_request()
             self.assertIsNotNone(requested)
-            self.assertEqual(g.flarf_filtered.args['ihave'], requested.args['ihave'])
+            self.assertEqual(g.flarf_filtered.args['what'], requested.args['what'])
 
 if __name__ == '__main__':
     unittest.main()

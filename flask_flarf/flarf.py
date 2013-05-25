@@ -5,7 +5,6 @@ requested = LocalProxy(lambda: _request_ctx_stack.top.g.flarf_filtered)
 
 _flarf = LocalProxy(lambda: current_app.extensions['flarf'])
 
-
 class FilterRequest(object):
     def __init__(self, request):
         if _flarf.filter_params:
