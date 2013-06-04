@@ -1,38 +1,58 @@
+from collections import OrderedDict
 from flask import Blueprint, g, _request_ctx_stack, current_app
 from werkzeug import LocalProxy
+from operator import attrgetter
 
-requested = LocalProxy(lambda: _request_ctx_stack.top.g.flarf_filtered)
+flarf = LocalProxy(lambda: current_app.extensions['flarf'])
+_fs = LocalProxy(lambda: current_app.extensions['flarf'].filters)
 
-_flarf = LocalProxy(lambda: current_app.extensions['flarf'])
+class FlarfError(Exception):
+    pass
 
-class FilterRequest(object):
-    def __init__(self, request):
-        if _flarf.filter_params:
-            for arg in _flarf.filter_params:
+
+class FlarfFiltered(object):
+    def __init__(self, tag, request):
+        if _fs[tag].filter_params:
+            for arg in _fs[tag].filter_params:
                 setattr(self, arg, getattr(request, arg, None))
 
 
-def filter_to_g(request):
-    g.flarf_filtered = _flarf.filter_cls(request)
-    _flarf.additional_filter(request)
+class FlarfFilter(object):
+    def __init__(self, filter_tag=None,
+                       filter_precedence=100,
+                       filtered_cls=FlarfFiltered,
+                       filter_params=None,
+                       filter_on=['all'],
+                       filter_skip=['static']):
+        self.filter_tag = filter_tag
+        self.filter_precedence = filter_precedence
+        self.filtered_cls = filtered_cls
+        self.filter_params = filter_params
+        self.filter_on = filter_on
+        self.filter_skip = filter_skip
+
+    def filter_request(self, request):
+        setattr(g, self.filter_tag, self.filtered_cls(self.filter_tag, request))
+
+
+def flarf_run_filters():
+    r = _request_ctx_stack.top.request
+    request_endpoint = str(r.url_rule.endpoint).rsplit('.')[-1]
+    for f in _fs.itervalues():
+        if request_endpoint not in f.filter_skip:
+            if request_endpoint or 'all' in f.filter_on:
+                f.filter_request(r)
 
 
 class Flarf(object):
     def __init__(self, app=None,
-                       filter_cls=FilterRequest,
-                       filter_params=None,
-                       filter_func=filter_to_g,
-                       filter_skip=['static'],
-                       filter_pass=None,
-                       filter_additional=None):
+                       before_request_func=flarf_run_filters,
+                       filter_cls=FlarfFilter,
+                       filters=None):
         self.app = app
+        self.before_request_func = before_request_func
         self.filter_cls = filter_cls
-        self.filter_params = filter_params
-        self.filter_func = filter_func
-        self.filter_skip = filter_skip
-        if filter_pass:
-            self.filter_skip.extend(filter_pass)
-        self.filter_additional = filter_additional
+        self.filters = self.set_filters(filters)
 
         if app is not None:
             self.app = app
@@ -40,16 +60,41 @@ class Flarf(object):
         else:
             self.app = None
 
-    def init_app(self, app):
-        def flarf_filter_request(filter_func=self.filter_func):
-            r = _request_ctx_stack.top.request
-            request_endpoint = str(r.url_rule.endpoint).rsplit('.')[-1]
-            if request_endpoint not in _flarf.filter_skip:
-                filter_func(r)
-        app.before_request(flarf_filter_request)
-        app.extensions['flarf'] = self
+    def set_filters(self, filters):
+        d = OrderedDict()
+        fs = self.check_filters(filters)
+        ofs = self.order_filters(fs)
+        for f in ofs:
+            d[f.filter_tag] = f
+        return d
 
-    def additional_filter(self, request):
-        if self.filter_additional:
-            for k,v in self.filter_additional.iteritems():
-                setattr(g, k, v(request))
+    def check_filters(self, filters):
+        fs = []
+        for f in filters:
+            if isinstance(f, self.filter_cls):
+                fs.append(f)
+            elif isinstance(f, dict):
+                fc = self.filter_cls(**f)
+                fs.append(fc)
+            else:
+                raise FlarfError("""
+                                filters must be a list of:\n
+                                - instance of filter_cls given to Flarf extension\n
+                                - instance of default filter_cls: FlarfFilter\n
+                                - a dict of params for filter_cls\n
+                                """)
+        return fs
+
+    def order_filters(self, filters):
+        return sorted(filters, key=attrgetter('filter_precedence'))
+
+    def init_app(self, app):
+        app.before_request(self.before_request_func)
+
+        for tag in self.filters.iterkeys():
+            c = "{}_context".format(tag)
+            setattr(self, c, LocalProxy(lambda: getattr(_request_ctx_stack.top.g,
+                                                        tag,
+                                                        None)))
+
+        app.extensions['flarf'] = self
