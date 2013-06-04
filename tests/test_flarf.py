@@ -40,7 +40,6 @@ class FlarfTestCase(unittest.TestCase):
             self.base_app.preprocess_request()
             self.assertIsNotNone(self.base_app.extensions['flarf'])
             self.assertIsNotNone(getattr(g, 'test_filter1', None))
-            self.assertIsNotNone(flarf.test_filter1_context)
 
     def test_filters(self):
         Flarf(self.pre_app, filters=self.test_filters2)

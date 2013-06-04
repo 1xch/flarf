@@ -11,9 +11,9 @@ class FlarfError(Exception):
 
 
 class FlarfFiltered(object):
-    def __init__(self, tag, request):
-        if _fs[tag].filter_params:
-            for arg in _fs[tag].filter_params:
+    def __init__(self, afilter, request):
+        if _fs[afilter.filter_tag].filter_params:
+            for arg in _fs[afilter.filter_tag].filter_params:
                 setattr(self, arg, getattr(request, arg, None))
 
 
@@ -25,6 +25,7 @@ class FlarfFilter(object):
                        filter_on=['all'],
                        filter_skip=['static']):
         self.filter_tag = filter_tag
+        self.filter_proxy_tag = "{}_context".format(filter_tag)
         self.filter_precedence = filter_precedence
         self.filtered_cls = filtered_cls
         self.filter_params = filter_params
@@ -32,7 +33,7 @@ class FlarfFilter(object):
         self.filter_skip = filter_skip
 
     def filter_request(self, request):
-        setattr(g, self.filter_tag, self.filtered_cls(self.filter_tag, request))
+        setattr(g, self.filter_tag, self.filtered_cls(self, request))
 
 
 def flarf_run_filters():
@@ -78,11 +79,12 @@ class Flarf(object):
                 fs.append(fc)
             else:
                 raise FlarfError("""
-                                filters must be a list of:\n
+                                {}\n
+                                filter must be a list of:\n
                                 - instance of filter_cls given to Flarf extension\n
                                 - instance of default filter_cls: FlarfFilter\n
                                 - a dict of params for filter_cls\n
-                                """)
+                                """.format(f))
         return fs
 
     def order_filters(self, filters):
@@ -90,11 +92,4 @@ class Flarf(object):
 
     def init_app(self, app):
         app.before_request(self.before_request_func)
-
-        for tag in self.filters.iterkeys():
-            c = "{}_context".format(tag)
-            setattr(self, c, LocalProxy(lambda: getattr(_request_ctx_stack.top.g,
-                                                        tag,
-                                                        None)))
-
         app.extensions['flarf'] = self
