@@ -4,6 +4,7 @@ from werkzeug import LocalProxy
 from operator import attrgetter
 
 flarf = LocalProxy(lambda: current_app.extensions['flarf'])
+
 _fs = LocalProxy(lambda: current_app.extensions['flarf'].filters)
 
 class FlarfError(Exception):
@@ -23,14 +24,17 @@ class FlarfFilter(object):
                        filtered_cls=FlarfFiltered,
                        filter_params=None,
                        filter_on=['all'],
-                       filter_skip=['static']):
+                       filter_pass=['static'],
+                       filter_skip=None):
         self.filter_tag = filter_tag
         self.filter_proxy_tag = "{}_context".format(filter_tag)
         self.filter_precedence = filter_precedence
         self.filtered_cls = filtered_cls
         self.filter_params = filter_params
         self.filter_on = filter_on
-        self.filter_skip = filter_skip
+        self.filter_pass = filter_pass
+        if filter_skip:
+            self.filter_pass.extend(filter_skip)
 
     def filter_request(self, request):
         setattr(g, self.filter_tag, self.filtered_cls(self, request))
@@ -38,11 +42,12 @@ class FlarfFilter(object):
 
 def flarf_run_filters():
     r = _request_ctx_stack.top.request
-    request_endpoint = str(r.url_rule.endpoint).rsplit('.')[-1]
-    for f in _fs.itervalues():
-        if request_endpoint not in f.filter_skip:
-            if request_endpoint or 'all' in f.filter_on:
-                f.filter_request(r)
+    if r.url_rule:
+        request_endpoint = str(r.url_rule.endpoint).rsplit('.')[-1]
+        for f in _fs.itervalues():
+            if request_endpoint not in f.filter_pass:
+                if request_endpoint or 'all' in f.filter_on:
+                    f.filter_request(r)
 
 
 class Flarf(object):

@@ -2,13 +2,17 @@ Filters Flask and extracts some information for your use.
 
 Simplest example: 
 
-   from flask import Flask
-   from flask.ext.flarf import Flarf, requested
+    from flask import Flask
+    from flask.ext.flarf import Flarf
+
+    filter1 = FlarfFilter(filter_tag='filter1',
+                          filter_precedence=100,
+                          filter_params=['path',],
+                          filter_on=['includeme'])
 
    app = Flask(__name__)
-   Flarf(app, filter_params=["path", "args"])
+   Flarf(app, filters=[filter1])
 
    @route("/")
    def index():
-       return render_template("index.html", current_args=requested.args,
-                                            current_path=requested.path)
+       return render_template("index.html", filter1=g.filter1)
