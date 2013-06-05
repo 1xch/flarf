@@ -40,7 +40,7 @@ But suppose you wanted the header returned in ALL CAPITAL LETTERS?
        return render_template("index.html")
 
    index.html:
-   UPPERCASE REQUEST HEADERS: {{g.filter1.path_upper}}
+   UPPERCASE REQUEST HEADERS: {{g.filter2.path_upper}}
 
 Basic examples are rather basic, but perhaps you can begin to see the uses: any
 time you need something specific for your views/templates you can filter it from 
