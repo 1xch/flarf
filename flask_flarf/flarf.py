@@ -13,6 +13,9 @@ class FlarfError(Exception):
 
 
 class FlarfFiltered(object):
+    """
+    The class used to place information filtered from request.
+    """
     def __init__(self, filter_params, request):
         for arg in filter_params:
             if isinstance(arg, FunctionType):
@@ -22,12 +25,26 @@ class FlarfFiltered(object):
 
 
 class FlarfFilter(object):
+    """
+    A single instance of a filter
+
+    :param filter_tag:          The name of the filter
+    :param filter_precedence:   If you need to order your filters in some way
+                                defaults to 100. Filters will be ordered from
+                                smallest number to largest
+    :param filtered_cls:        The class used for recording the info from the
+                                filter. Default is FlarfFiltered
+    :param filter_params:       What to use to filter, strings must be attributes
+                                of request, functions must take request as a
+                                single argument.
+    :param filter_on:           Which routes to use the filter on.
+    :param filter_skip:         Which routes to NOT use the filter.
+    """
     def __init__(self, filter_tag=None,
                        filter_precedence=100,
                        filtered_cls=FlarfFiltered,
                        filter_params=None,
                        filter_on=['all'],
-                       filter_pass=['static'],
                        filter_skip=None):
         self.filter_tag = filter_tag
         self.filter_proxy_tag = "{}_context".format(filter_tag)
@@ -35,7 +52,7 @@ class FlarfFilter(object):
         self.filtered_cls = filtered_cls
         self.filter_params = filter_params
         self.filter_on = filter_on
-        self.filter_pass = filter_pass
+        self.filter_pass = ['static']
         if filter_skip:
             self.filter_pass.extend(filter_skip)
 
@@ -44,9 +61,12 @@ class FlarfFilter(object):
 
 
 def flarf_run_filters():
+    """
+    A before_request function registered on the application that runs each filter
+    """
     r = _request_ctx_stack.top.request
     if r.url_rule:
-        request_endpoint = str(r.url_rule.endpoint).rsplit('.')[-1]
+        request_endpoint = str(r.endpoint).rsplit('.')[-1]
         for f in _fs.itervalues():
             if request_endpoint not in f.filter_pass:
                 if request_endpoint or 'all' in f.filter_on:
@@ -54,6 +74,19 @@ def flarf_run_filters():
 
 
 class Flarf(object):
+    """
+    The Flarf extension object.
+
+    :param app:                 The application to register the function on.
+    :param before_request_func: The before request function to run the filters.
+                                Defaults to flarf_run_filters
+    :param filter_cls:          The default filter class to use in registering
+                                filters. Defaults to FlarfFilter.
+    :param filtered_cls:        The default class for filtered info, if none
+                                FlarfFiltered will be used.
+    :param filters:             The filters to be run per request
+    """
+
     def __init__(self, app=None,
                        before_request_func=flarf_run_filters,
                        filter_cls=FlarfFilter,
