@@ -7,9 +7,11 @@ import unittest
 
 class FlarfTestCase(unittest.TestCase):
     def setUp(self):
+        def path_to_upper(request):
+            return request.path.upper()
         test_filter1 = FlarfFilter(filter_tag='test_filter1',
                                    filter_precedence=100,
-                                   filter_params=['path',],
+                                   filter_params=['path', path_to_upper],
                                    filter_on=['includeme'])
         test_filter2 = FlarfFilter(filter_tag='test_filter2',
                                    filter_precedence=200,
@@ -22,6 +24,9 @@ class FlarfTestCase(unittest.TestCase):
         self.test_filters2 = [test_filter1, test_filter2, test_filter3]
         pre_app = Flask(__name__)
         @pre_app.route('/')
+        def test_index():
+            return g.__dict__
+        @pre_app.route('/app_route')
         def test_index():
             return g.__dict__
         post_app = Flask(__name__)
@@ -43,13 +48,13 @@ class FlarfTestCase(unittest.TestCase):
 
     def test_filters(self):
         Flarf(self.pre_app, filters=self.test_filters2)
-        with self.pre_app.test_request_context('/'):
+        with self.pre_app.test_request_context('/app_route'):
             self.pre_app.preprocess_request()
             self.assertIsNotNone(getattr(g, 'test_filter3', None))
             self.assertEqual(getattr(g, 'test_filter3', None),
                              getattr(g, 'test_filter3', None))
-            self.assertEqual(g.test_filter1.path, u'/')
-            self.assertEqual(u'/', g.test_filter3.path)
+            self.assertEqual(g.test_filter1.path_to_upper, u'/APP_ROUTE')
+            self.assertEqual(u'/app_route', g.test_filter3.path)
             self.assertEqual(g.test_filter1.path,
                              g.test_filter3.path)
 

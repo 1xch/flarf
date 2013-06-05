@@ -2,6 +2,7 @@ from collections import OrderedDict
 from flask import Blueprint, g, _request_ctx_stack, current_app
 from werkzeug import LocalProxy
 from operator import attrgetter
+from types import FunctionType
 
 flarf = LocalProxy(lambda: current_app.extensions['flarf'])
 
@@ -12,9 +13,11 @@ class FlarfError(Exception):
 
 
 class FlarfFiltered(object):
-    def __init__(self, afilter, request):
-        if _fs[afilter.filter_tag].filter_params:
-            for arg in _fs[afilter.filter_tag].filter_params:
+    def __init__(self, filter_params, request):
+        for arg in filter_params:
+            if isinstance(arg, FunctionType):
+                setattr(self, arg.__name__, arg(request))
+            else:
                 setattr(self, arg, getattr(request, arg, None))
 
 
@@ -37,7 +40,7 @@ class FlarfFilter(object):
             self.filter_pass.extend(filter_skip)
 
     def filter_request(self, request):
-        setattr(g, self.filter_tag, self.filtered_cls(self, request))
+        setattr(g, self.filter_tag, self.filtered_cls(self.filter_params, request))
 
 
 def flarf_run_filters():
@@ -54,10 +57,12 @@ class Flarf(object):
     def __init__(self, app=None,
                        before_request_func=flarf_run_filters,
                        filter_cls=FlarfFilter,
+                       filtered_cls=None,
                        filters=None):
         self.app = app
         self.before_request_func = before_request_func
         self.filter_cls = filter_cls
+        self.filtered_cls = filtered_cls
         self.filters = self.set_filters(filters)
 
         if app is not None:
@@ -80,6 +85,8 @@ class Flarf(object):
             if isinstance(f, self.filter_cls):
                 fs.append(f)
             elif isinstance(f, dict):
+                if self.filtered_cls:
+                    f.update({filtered_cls: self.filtered_cls})
                 fc = self.filter_cls(**f)
                 fs.append(fc)
             else:
