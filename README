@@ -13,6 +13,6 @@ Simplest example:
    app = Flask(__name__)
    Flarf(app, filters=[filter1])
 
-   @route("/")
+   @route("/includeme")
    def index():
        return render_template("index.html", filter1=g.filter1)
