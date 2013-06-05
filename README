@@ -3,7 +3,7 @@ Filters Flask and extracts some information for your use.
 Simplest example: 
 
     from flask import Flask
-    from flask.ext.flarf import Flarf
+    from flask.ext.flarf import Flarf, FlarFilter
 
     filter1 = FlarfFilter(filter_tag='filter1',
                           filter_precedence=100,
@@ -15,4 +15,7 @@ Simplest example:
 
    @route("/includeme")
    def index():
-       return render_template("index.html", filter1=g.filter1)
+       return render_template("index.html")
+
+   index.html:
+   PATH IS {{g.filter1.path}}
