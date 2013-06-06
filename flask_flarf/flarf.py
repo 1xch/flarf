@@ -6,7 +6,7 @@ from types import FunctionType
 #from functools import wraps
 import pprint
 
-flarf = LocalProxy(lambda: current_app.extensions['flarf'])
+#flarf = LocalProxy(lambda: current_app.extensions['flarf'])
 
 _fs = LocalProxy(lambda: current_app.extensions['flarf'].filters)
 
@@ -49,8 +49,6 @@ class FlarfFilter(object):
                        filter_on=['all'],
                        filter_skip=None):
         self.filter_tag = filter_tag
-        #self.filter_proxy_tag = "{}_proxy".format(filter_tag)
-        self.filter_context_tag = "{}_context".format(filter_tag)
         self.filter_precedence = filter_precedence
         self.filtered_cls = filtered_cls
         self.filter_params = filter_params
@@ -60,12 +58,15 @@ class FlarfFilter(object):
             self.filter_pass.extend(filter_skip)
 
     def filter_request(self, request):
-        setattr(g, self.filter_tag, self.filtered_cls(self.filter_params, request))
+        setattr(g,
+                self.filter_tag,
+                self.filtered_cls(self.filter_params,
+                                  request))
 
 
 def flarf_run_filters():
     """
-    A before_request function registered on the application that runs each filter
+    A before_request function registered on the application that runs each filter.
     """
     r = _request_ctx_stack.top.request
     if r.url_rule:
@@ -76,6 +77,9 @@ def flarf_run_filters():
                     f.filter_request(r)
 
 def flarf_ctx_processor():
+    """
+    Context processor which makes the filtered info  available inside a template.
+    """
     def flarf_ctx(which_filter):
         return getattr(g, which_filter)
     return dict(flarf_ctx=flarf_ctx)

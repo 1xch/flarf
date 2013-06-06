@@ -7,12 +7,23 @@ Simplest example:
     from flask import Flask
     from flask.ext.flarf import Flarf, FlarFilter
 
-    filter1 = FlarfFilter(filter_tag='filter1',
-                          filter_params=['headers',],
-                          filter_on=['includeme'])
+    def format_from_request(request):
+        return """
+               HEADER: {}\n
+               header: {}\n
+               PATH: {}\n
+               ARGS: {}\n
+               """.format(request.header.upper(),
+                          request.header,
+                          request.path.upper(),
+                          request.args)
+
+    flarf_filter = FlarfFilter(filter_tag='flarf_filter',
+                               filter_params=[format_from_request],
+                               filter_on=['includeme'])
 
    app = Flask(__name__)
-   Flarf(app, filters=[filter1])
+   Flarf(app, filters=[flarf_filter])
 
    @app.route("/includeme")
    def index():
@@ -20,31 +31,18 @@ Simplest example:
 
    index.html:
 
-   request headers: {{ flarf_ctx('filter1').headers }}
+   MY_REQUEST: {{ flarf_ctx('flarf_filter').format_a_request }}
 
-Ok, so you can already do this without using Flarf by getting {{request.headers}}.
-
-But suppose you wanted the header returned in ALL CAPITAL LETTERS?
-
-    def path_upper(request):
-        return request.header.upper()
-
-    filter2 = FlarfFilter(filter_tag='filter2',
-                          filter_params=[path_upper],
-                          filter_on=['includeme'])
-
-   app = Flask(__name__)
-   Flarf(app, filters=[filter2])
-
-   @app.route("/includeme")
-   def index():
-       return render_template("index.html")
-
-   index.html:
-
-   UPPERCASE REQUEST HEADERS: {{ flarf_ctx('filter2').path_upper }}
+Ok, so you can already do this without using Flarf in Flask and Jinja by using
+request and filters, but using a filter reduced what needed to be typed out to
+a small degree and is reuseable. If you need to do the same thing over and over,
+you could use a template macro, but what if you want to something more readily
+done in code and not always seen? For example, keeping a history of user requests
+on a per user basis?  
 
 Basic examples are by nature super simple, but perhaps you can begin to see the
 uses: any time you need anything specific for your views/templates you can
 filter it from incoming request and have it readily available without having to
 prep the info on a per-view/per-template basis.
+
+Suggestions and input welcomed.
