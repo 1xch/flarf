@@ -3,10 +3,6 @@ from flask import Blueprint, g, _request_ctx_stack, current_app
 from werkzeug import LocalProxy
 from operator import attrgetter
 from types import FunctionType
-#from functools import wraps
-import pprint
-
-#flarf = LocalProxy(lambda: current_app.extensions['flarf'])
 
 _fs = LocalProxy(lambda: current_app.extensions['flarf'].filters)
 
