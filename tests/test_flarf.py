@@ -29,6 +29,9 @@ class FlarfTestCase(unittest.TestCase):
         @pre_app.route('/app_route')
         def test_index():
             return g.__dict__
+        @pre_app.route('/c')
+        def test_index():
+            return render_template('test_template.html')
         post_app = Flask(__name__)
         @post_app.route('/')
         def test_index():
@@ -57,6 +60,13 @@ class FlarfTestCase(unittest.TestCase):
             self.assertEqual(u'/app_route', g.test_filter3.path)
             self.assertEqual(g.test_filter1.path,
                              g.test_filter3.path)
+
+    def test_context_processor(self):
+        Flarf(self.pre_app, filters=self.test_filters2)
+        with self.pre_app.test_client() as ct:
+            rv = ct.get('/c')
+            self.assertIsNotNone(rv.data)
+            self.assertEqual(rv.data, g.test_filter3.path)
 
     def test_custom_before_request_func(self):
         pass

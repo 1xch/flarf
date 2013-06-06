@@ -3,6 +3,8 @@ from flask import Blueprint, g, _request_ctx_stack, current_app
 from werkzeug import LocalProxy
 from operator import attrgetter
 from types import FunctionType
+#from functools import wraps
+import pprint
 
 flarf = LocalProxy(lambda: current_app.extensions['flarf'])
 
@@ -47,7 +49,8 @@ class FlarfFilter(object):
                        filter_on=['all'],
                        filter_skip=None):
         self.filter_tag = filter_tag
-        self.filter_proxy_tag = "{}_context".format(filter_tag)
+        #self.filter_proxy_tag = "{}_proxy".format(filter_tag)
+        self.filter_context_tag = "{}_context".format(filter_tag)
         self.filter_precedence = filter_precedence
         self.filtered_cls = filtered_cls
         self.filter_params = filter_params
@@ -71,6 +74,11 @@ def flarf_run_filters():
             if request_endpoint not in f.filter_pass:
                 if request_endpoint or 'all' in f.filter_on:
                     f.filter_request(r)
+
+def flarf_ctx_processor():
+    def flarf_ctx(which_filter):
+        return getattr(g, which_filter)
+    return dict(flarf_ctx=flarf_ctx)
 
 
 class Flarf(object):
@@ -137,4 +145,5 @@ class Flarf(object):
 
     def init_app(self, app):
         app.before_request(self.before_request_func)
+        app.context_processor(flarf_ctx_processor)
         app.extensions['flarf'] = self
