@@ -19,7 +19,8 @@ Simplest example:
        return render_template("index.html")
 
    index.html:
-   request headers: {{g.filter1.headers}}
+
+   request headers: {{ flarf_ctx('filter1').headers }}
 
 Ok, so you can already do this without using Flarf by getting {{request.headers}}.
 
@@ -40,9 +41,10 @@ But suppose you wanted the header returned in ALL CAPITAL LETTERS?
        return render_template("index.html")
 
    index.html:
-   UPPERCASE REQUEST HEADERS: {{g.filter2.path_upper}}
 
-Basic examples are rather basic, but perhaps you can begin to see the uses: any
-time you need something specific for your views/templates you can filter it from 
-incoming request and have it readily available without having to prep the info
-need on a per-view/per-template basis.
+   UPPERCASE REQUEST HEADERS: {{ flarf_ctx('filter2').path_upper }}
+
+Basic examples are by nature super simple, but perhaps you can begin to see the
+uses: any time you need anything specific for your views/templates you can
+filter it from incoming request and have it readily available without having to
+prep the info on a per-view/per-template basis.
