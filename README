@@ -31,7 +31,7 @@ Simplest example:
 
    index.html:
 
-   MY_REQUEST: {{ flarf_ctx('flarf_filter').format_a_request }}
+   MY_REQUEST: {{ flarf_ctx('flarf_filter').format_from_request }}
 
 Ok, so you can already do this without using Flarf in Flask and Jinja by using
 request and filters, but using a filter reduced what needed to be typed out to
