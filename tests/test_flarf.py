@@ -1,12 +1,20 @@
 from __future__ import with_statement
 import sys
 import os
-from flask import Flask, render_template, current_app, g, request
+from flask import Flask, render_template, current_app, g, request, redirect
 from flask.ext.flarf import Flarf, FlarfFilter, flarf
 import unittest
 
 class FlarfTestCase(unittest.TestCase):
     def setUp(self):
+        class CustomFilter(FlarfFilter):
+            def __init__(self, something_custom="NOTHING", **kwargs):
+                super(CustomFilter, self).__init__(**kwargs)
+                self.something_custom = something_custom
+            def filter_request(self, request):
+                setattr(g, 'custom_filter_run', True)
+                setattr(g, self.filter_tag, self.something_custom)
+                return redirect('/')
         def path_to_upper(request):
             return request.path.upper()
         test_filter1 = FlarfFilter(filter_tag='test_filter1',
@@ -20,8 +28,20 @@ class FlarfTestCase(unittest.TestCase):
                         'filter_precedence': 300,
                         'filter_params': ['path', 'args'],
                         'filter_skip':['passme']}
+        test_filter4 = CustomFilter(filter_tag='test_filter4',
+                                    filter_precedence=100,
+                                    filter_params=['path', path_to_upper],
+                                    filter_on=['app_route'],
+                                    something_custom="I am test filter 4")
+        test_filter5 = {'filter_tag': 'test_filter3',
+                        'filter_precedence': 300,
+                        'filter_params': ['path', 'args'],
+                        'filter_skip':['passme'],
+                        'something_custom': 'I am test filter 5'}
         self.test_filters1 = [test_filter1]
         self.test_filters2 = [test_filter1, test_filter2, test_filter3]
+        self.test_filters3 = [test_filter4, test_filter5]
+        self.custom_filter = CustomFilter
         pre_app = Flask(__name__)
         @pre_app.route('/')
         def test_index():
@@ -71,8 +91,15 @@ class FlarfTestCase(unittest.TestCase):
     def test_custom_before_request_func(self):
         pass
 
-    def test_custom_filter_cls(self):
-        pass
+    def test_custom_filter_cls_with_return_value(self):
+        Flarf(self.pre_app, filter_cls=self.custom_filter,
+                            filters=self.test_filters3)
+        with self.pre_app.test_request_context('/'):
+            self.pre_app.preprocess_request()
+            self.assertTrue(g.custom_filter_run)
+        with self.pre_app.test_client() as ct:
+            rv = ct.get('/app_route')
+            self.assertEqual(rv.status_code, 302)
 
     def test_custom_filtered_cls(self):
         pass

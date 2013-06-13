@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from flask import Blueprint, g, _request_ctx_stack, current_app
 from werkzeug import LocalProxy
+from werkzeug.wrappers import Response
 from operator import attrgetter
 from types import FunctionType
 
@@ -12,7 +13,7 @@ class FlarfError(Exception):
 
 class FlarfFiltered(object):
     """
-    The class used to place information filtered from request.
+    The default class used to place information filtered from request.
     """
     def __init__(self, filter_params, request):
         for arg in filter_params:
@@ -27,16 +28,17 @@ class FlarfFilter(object):
     A single instance of a filter
 
     :param filter_tag:          The name of the filter
-    :param filter_precedence:   If you need to order your filters in some way
-                                defaults to 100. Filters will be ordered from
-                                smallest number to largest
+    :param filter_precedence:   If you need to order your filters in some way,
+                                set this as an integer, defaults to 100.
+                                Filters will be ordered from smallest number to
+                                largest
     :param filtered_cls:        The class used for recording the info from the
                                 filter. Default is FlarfFiltered
-    :param filter_params:       What to use to filter, strings must be attributes
-                                of request, functions must take request as a
-                                single argument.
+    :param filter_params:       A list of params used by the filter on request.
+                                Strings must be attributes of request, functions
+                                must take request as a single argument.
     :param filter_on:           Which routes to use the filter on.
-    :param filter_skip:         Which routes to NOT use the filter.
+    :param filter_skip:         Which routes to skip and to NOT use the filter.
     """
     def __init__(self, filter_tag=None,
                        filter_precedence=100,
@@ -67,14 +69,16 @@ def flarf_run_filters():
     r = _request_ctx_stack.top.request
     if r.url_rule:
         request_endpoint = str(r.endpoint).rsplit('.')[-1]
-        for f in _fs.itervalues():
+        for f in _fs.values():
             if request_endpoint not in f.filter_pass:
                 if request_endpoint or 'all' in f.filter_on:
-                    f.filter_request(r)
+                    rv = f.filter_request(r)
+                    if rv:
+                        return rv
 
 def flarf_ctx_processor():
     """
-    Context processor which makes the filtered info  available inside a template.
+    Context processor which makes the filtered info available inside a template.
     """
     def flarf_ctx(which_filter):
         return getattr(g, which_filter)
@@ -89,10 +93,16 @@ class Flarf(object):
     :param before_request_func: The before request function to run the filters.
                                 Defaults to flarf_run_filters
     :param filter_cls:          The default filter class to use in registering
-                                filters. Defaults to FlarfFilter.
-    :param filtered_cls:        The default class for filtered info, if none
-                                FlarfFiltered will be used.
-    :param filters:             The filters to be run per request
+                                filters. Defaults to FlarfFilter. Custom filter
+                                classes should subclass FlarfFilter to enusure
+                                proper processing through extension initialization.
+    :param filtered_cls:        The default class for filtered info, if None,
+                                the default set in the filter_cls will be used.
+                                If set here, only specifies when filters are defined
+                                as dicts; custom filter_cls MUST define a filtered_cls
+                                or use the default.
+    :param filters:             A list of filter_cls instances(or dicts mappable
+                                to) to be run per request.
     """
 
     def __init__(self, app=None,
@@ -133,7 +143,7 @@ class Flarf(object):
             else:
                 raise FlarfError("""
                                 {}\n
-                                filter must be a list of:\n
+                                param `filters` must be a list of:\n
                                 - instance of filter_cls given to Flarf extension\n
                                 - instance of default filter_cls: FlarfFilter\n
                                 - a dict of params for filter_cls\n
