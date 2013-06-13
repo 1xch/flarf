@@ -1,7 +1,6 @@
 from collections import OrderedDict
 from flask import Blueprint, g, _request_ctx_stack, current_app
 from werkzeug import LocalProxy
-from werkzeug.wrappers import Response
 from operator import attrgetter
 from types import FunctionType
 
