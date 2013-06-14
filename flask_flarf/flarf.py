@@ -80,7 +80,7 @@ def flarf_ctx_processor():
     Context processor which makes the filtered info available inside a template.
     """
     def flarf_ctx(which_filter):
-        return getattr(g, which_filter)
+        return getattr(g, which_filter, None)
     return dict(flarf_ctx=flarf_ctx)
 
 

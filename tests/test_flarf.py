@@ -47,10 +47,10 @@ class FlarfTestCase(unittest.TestCase):
         def test_index():
             return g.__dict__
         @pre_app.route('/app_route')
-        def test_index():
+        def test_app_route():
             return g.__dict__
         @pre_app.route('/c')
-        def test_index():
+        def test_c_route():
             return render_template('test_template.html')
         post_app = Flask(__name__)
         @post_app.route('/')

@@ -1,7 +1,7 @@
 """
 Flarf: Flask Request Filter
 -------------
-filter chosen params from request and make them accessible on g
+Configurable request filters
 """
 
 from setuptools import setup
