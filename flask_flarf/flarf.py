@@ -130,24 +130,43 @@ class Flarf(object):
         return d
 
     def check_filters(self, filters):
-        fs = []
-        for f in filters:
-            if isinstance(f, self.filter_cls):
-                fs.append(f)
-            elif isinstance(f, dict):
-                if self.filtered_cls:
-                    f.update({filtered_cls: self.filtered_cls})
-                fc = self.filter_cls(**f)
-                fs.append(fc)
-            else:
-                raise FlarfError("""
-                                {}\n
-                                param `filters` must be a list of:\n
-                                - instance of filter_cls given to Flarf extension\n
-                                - instance of default filter_cls: FlarfFilter\n
-                                - a dict of params for filter_cls\n
-                                """.format(f))
-        return fs
+        return [self.reflect_filter(f) for f in filters]
+        #fs = []
+        #for f in filters:
+        #    if isinstance(f, self.filter_cls):
+        #        fs.append(f)
+        #    elif isinstance(f, dict):
+        #        if self.filtered_cls:
+        #            f.update({filtered_cls: self.filtered_cls})
+        #        fc = self.filter_cls(**f)
+        #        fs.append(fc)
+        #    else:
+        #        raise FlarfError("""
+        #                        {}\n
+        #                        param `filters` must be a list of:\n
+        #                        - instance of filter_cls given to Flarf extension\n
+        #                        - instance of default filter_cls: FlarfFilter\n
+        #                        - a dict of params for filter_cls\n
+        #                        """.format(f))
+        #return fs
+
+    def reflect_filter(self, afilter):
+        if isinstance(afilter, self.filter_cls):
+                return afilter#fs.append(f)
+        elif isinstance(afilter, dict):
+                #if self.filtered_cls:
+                #    f.update({filtered_cls: self.filtered_cls})
+                return self.filter_cls(**afilter)
+                #fs.append(fc)
+        else:
+            raise FlarfError("""
+                            filter provided: {}\n
+                            param `filters` must be a list of:\n
+                            - instance of filter_cls given to Flarf extension\n
+                            - instance of default filter_cls: FlarfFilter\n
+                            - a dict of params for filter_cls\n
+                            Check that the filter is one of the above.
+                            """.format(afilter))
 
     def order_filters(self, filters):
         return sorted(filters, key=attrgetter('filter_precedence'))
