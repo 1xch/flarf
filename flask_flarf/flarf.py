@@ -131,33 +131,12 @@ class Flarf(object):
 
     def check_filters(self, filters):
         return [self.reflect_filter(f) for f in filters]
-        #fs = []
-        #for f in filters:
-        #    if isinstance(f, self.filter_cls):
-        #        fs.append(f)
-        #    elif isinstance(f, dict):
-        #        if self.filtered_cls:
-        #            f.update({filtered_cls: self.filtered_cls})
-        #        fc = self.filter_cls(**f)
-        #        fs.append(fc)
-        #    else:
-        #        raise FlarfError("""
-        #                        {}\n
-        #                        param `filters` must be a list of:\n
-        #                        - instance of filter_cls given to Flarf extension\n
-        #                        - instance of default filter_cls: FlarfFilter\n
-        #                        - a dict of params for filter_cls\n
-        #                        """.format(f))
-        #return fs
 
     def reflect_filter(self, afilter):
         if isinstance(afilter, self.filter_cls):
-                return afilter#fs.append(f)
+            return afilter
         elif isinstance(afilter, dict):
-                #if self.filtered_cls:
-                #    f.update({filtered_cls: self.filtered_cls})
-                return self.filter_cls(**afilter)
-                #fs.append(fc)
+            return self.filter_cls(**afilter)
         else:
             raise FlarfError("""
                             filter provided: {}\n
