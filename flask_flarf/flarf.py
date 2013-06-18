@@ -142,7 +142,8 @@ class Flarf(object):
                             filter provided: {}\n
                             param `filters` must be a list of:\n
                             - instance of filter_cls given to Flarf extension\n
-                            - instance of default filter_cls: FlarfFilter\n
+                              (either default filter_cls: FlarfFilter or one\n
+                               given with extension intialization)\n
                             - a dict of params for filter_cls\n
                             Check that the filter is one of the above.
                             """.format(afilter))
