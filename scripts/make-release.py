@@ -79,7 +79,7 @@ def set_filename_version(filename, version_number, pattern):
 
 def set_init_version(version):
     info('Setting __init__.py version to %s', version)
-    set_filename_version('flask_security/__init__.py', version, '__version__')
+    set_filename_version('flask_flarf/__init__.py', version, '__version__')
 
 
 def set_setup_version(version):

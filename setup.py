@@ -5,11 +5,10 @@ Configurable request filters
 """
 
 from setuptools import setup
-from flask_flarf import __version__
 
 setup(
-    name='Flask Flarf',
-    version=__version__,
+    name='Flask-Flarf',
+    version='0.0.3',
     url='https://github.com/thrisp/flarf',
     license='MIT',
     author='Thrisp/Hurrata',
