@@ -1,0 +1,28 @@
+Flask-Flarf Changelog
+========================
+
+Version 0.0.3
+-------------
+
+- basic context processor(flarf_ctx) that retrieves by filter tag
+
+
+Version 0.0.2
+-------------
+
+- change from 'preprocessor' to 'filter' terminology in variables
+- filter intialization and ordering
+- filters can get a simple parameter or run a function over request
+- effective testing 
+
+
+Version 0.0.1
+-------------
+
+- first working version as an extensionm, from previous blueprint code
+
+
+Version 0.0.0
+-------------
+
+- project initialization and basic setup

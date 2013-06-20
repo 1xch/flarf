@@ -101,7 +101,7 @@ class Flarf(object):
                                 as dicts; custom filter_cls MUST define a filtered_cls
                                 or use the default.
     :param filters:             A list of filter_cls instances(or dicts mappable
-                                to) to be run per request.
+                                to filter_cls) to be run per request.
     """
 
     def __init__(self, app=None,

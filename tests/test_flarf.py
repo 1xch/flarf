@@ -86,7 +86,8 @@ class FlarfTestCase(unittest.TestCase):
         with self.pre_app.test_client() as ct:
             rv = ct.get('/c')
             self.assertIsNotNone(rv.data)
-            self.assertEqual(rv.data, g.test_filter3.path)
+            self.assertEqual(rv.data.decode(), g.test_filter3.path)
+            # bytes / b'' still uncertian how-to deal with
 
     def test_custom_before_request_func(self):
         pass
