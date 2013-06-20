@@ -7,7 +7,7 @@ Configurable request filters
 from setuptools import setup
 
 setup(
-    name='Flask Flarf',
+    name='Flask-Flarf',
     version='0.0.3',
     url='https://github.com/thrisp/flarf',
     license='MIT',
