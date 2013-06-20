@@ -4,11 +4,15 @@ Flask-Flarf Changelog
 Version 0.0.3
 -------------
 
+Released June 20th 2013
+
 - basic context processor(flarf_ctx) that retrieves by filter tag
 
 
 Version 0.0.2
 -------------
+
+Released June 6th 2013
 
 - change from 'preprocessor' to 'filter' terminology in variables
 - filter intialization and ordering
@@ -19,10 +23,14 @@ Version 0.0.2
 Version 0.0.1
 -------------
 
-- first working version as an extensionm, from previous blueprint code
+Released May 24th 2013
+
+- first working version as an extension, from previous blueprint code
 
 
 Version 0.0.0
 -------------
+
+Released May 21st 2013
 
 - project initialization and basic setup
