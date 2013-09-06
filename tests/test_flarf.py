@@ -7,16 +7,26 @@ import unittest
 
 class FlarfTestCase(unittest.TestCase):
     def setUp(self):
+        def custom_before_func():
+            setattr(g, 'custom_before_func', True)
+        class CustomFiltered(object):
+            def __init__(self):
+                self.custom_filtered = True
         class CustomFilter(FlarfFilter):
             def __init__(self, something_custom="NOTHING", **kwargs):
-                super(CustomFilter, self).__init__(**kwargs)
+                self.filtered_cls = CustomFiltered
                 self.something_custom = something_custom
+                super(CustomFilter, self).__init__(**kwargs)
             def filter_request(self, request):
+                setattr(g, 'custom_filtered_class', CustomFiltered())
                 setattr(g, 'custom_filter_run', True)
                 setattr(g, self.filter_tag, self.something_custom)
                 return redirect('/')
         def path_to_upper(request):
             return request.path.upper()
+        self.custom_before_func = custom_before_func
+        self.custom_filter = CustomFilter
+        self.custom_filtered = CustomFiltered
         test_filter1 = FlarfFilter(filter_tag='test_filter1',
                                    filter_precedence=100,
                                    filter_params=['path', path_to_upper],
@@ -41,7 +51,6 @@ class FlarfTestCase(unittest.TestCase):
         self.test_filters1 = [test_filter1]
         self.test_filters2 = [test_filter1, test_filter2, test_filter3]
         self.test_filters3 = [test_filter4, test_filter5]
-        self.custom_filter = CustomFilter
         pre_app = Flask(__name__)
         @pre_app.route('/')
         def test_index():
@@ -87,23 +96,26 @@ class FlarfTestCase(unittest.TestCase):
             rv = ct.get('/c')
             self.assertIsNotNone(rv.data)
             self.assertEqual(rv.data.decode(), g.test_filter3.path)
-            # bytes / b'' still uncertian how-to deal with
+            # bytes / b'' : ?
 
     def test_custom_before_request_func(self):
-        pass
+        Flarf(self.pre_app,
+              filters=self.test_filters2,
+              before_request_func=self.custom_before_func)
+        with self.pre_app.test_request_context('/'):
+            self.pre_app.preprocess_request()
+            self.assertTrue(g.custom_before_func)
 
-    def test_custom_filter_cls_with_return_value(self):
+    def test_custom_filter_and_filtered_cls(self):
         Flarf(self.pre_app, filter_cls=self.custom_filter,
                             filters=self.test_filters3)
         with self.pre_app.test_request_context('/'):
             self.pre_app.preprocess_request()
             self.assertTrue(g.custom_filter_run)
+            self.assertTrue(g.custom_filtered_class.custom_filtered)
         with self.pre_app.test_client() as ct:
             rv = ct.get('/app_route')
             self.assertEqual(rv.status_code, 302)
-
-    def test_custom_filtered_cls(self):
-        pass
 
     def test_include_route(self):
         @self.pre_app.route('/includeme')

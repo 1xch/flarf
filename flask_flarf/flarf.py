@@ -4,22 +4,21 @@ from werkzeug import LocalProxy
 from operator import attrgetter
 from types import FunctionType
 
+
 _fs = LocalProxy(lambda: current_app.extensions['flarf'].filters)
 
-class FlarfError(Exception):
-    pass
 
-
-class FlarfFiltered(object):
-    """
-    The default class used to place information filtered from request.
-    """
-    def __init__(self, filter_params, request):
-        for arg in filter_params:
-            if isinstance(arg, FunctionType):
-                setattr(self, arg.__name__, arg(request))
-            else:
-                setattr(self, arg, getattr(request, arg, None))
+class FlarfFiltered(dict):
+    def __getattr__(self, attr):
+        return self.get(attr, None)
+    __setattr__= dict.__setitem__
+    __delattr__= dict.__delitem__
+    def __iter__(self):
+        return dict.__iter__(self)
+    def __len__(self):
+        return dict.__len__(self)
+    def __contains__(self, x):
+        return dict.__contains__(self, x)
 
 
 class FlarfFilter(object):
@@ -39,12 +38,13 @@ class FlarfFilter(object):
     :param filter_on:           Which routes to use the filter on.
     :param filter_skip:         Which routes to skip and to NOT use the filter.
     """
-    def __init__(self, filter_tag=None,
-                       filter_precedence=100,
-                       filtered_cls=FlarfFiltered,
-                       filter_params=None,
-                       filter_on=['all'],
-                       filter_skip=None):
+    def __init__(self,
+                 filter_tag=None,
+                 filter_precedence=100,
+                 filtered_cls=FlarfFiltered,
+                 filter_params=None,
+                 filter_on=['all'],
+                 filter_skip=None):
         self.filter_tag = filter_tag
         self.filter_precedence = filter_precedence
         self.filtered_cls = filtered_cls
@@ -54,11 +54,20 @@ class FlarfFilter(object):
         if filter_skip:
             self.filter_pass.extend(filter_skip)
 
+    def filter_param(self, param, request):
+        if isinstance(param, FunctionType):
+            setattr(self.filtered, param.__name__, param(request))
+        else:
+            setattr(self.filtered, param, getattr(request, param, None))
+
+    def filter_by_param(self, request):
+        for param in self.filter_params:
+            self.filter_param(param, request)
+
     def filter_request(self, request):
-        setattr(g,
-                self.filter_tag,
-                self.filtered_cls(self.filter_params,
-                                  request))
+        self.filtered = self.filtered_cls()
+        self.filter_by_param(request)
+        setattr(g, self.filter_tag, self.filtered)
 
 
 def flarf_run_filters():
@@ -91,29 +100,19 @@ class Flarf(object):
     :param app:                 The application to register the function on.
     :param before_request_func: The before request function to run the filters.
                                 Defaults to flarf_run_filters
-    :param filter_cls:          The default filter class to use in registering
-                                filters. Defaults to FlarfFilter. Custom filter
-                                classes should subclass FlarfFilter to enusure
-                                proper processing through extension initialization.
-    :param filtered_cls:        The default class for filtered info, if None,
-                                the default set in the filter_cls will be used.
-                                If set here, only specifies when filters are defined
-                                as dicts; custom filter_cls MUST define a filtered_cls
-                                or use the default.
-    :param filters:             A list of filter_cls instances(or dicts mappable
-                                to filter_cls) to be run per request.
+    :param filters:             A list of filter instances(or dicts mappable
+                                to filter instances) to be run per request.
     """
 
-    def __init__(self, app=None,
-                       before_request_func=flarf_run_filters,
-                       filter_cls=FlarfFilter,
-                       filtered_cls=None,
-                       filters=None):
+    def __init__(self,
+                 app=None,
+                 before_request_func=flarf_run_filters,
+                 filter_cls=FlarfFilter,
+                 filters=None):
         self.app = app
         self.before_request_func = before_request_func
         self.filter_cls = filter_cls
-        self.filtered_cls = filtered_cls
-        self.filters = self.set_filters(filters)
+        self.filters = self.process_filters(filters)
 
         if app is not None:
             self.app = app
@@ -121,7 +120,7 @@ class Flarf(object):
         else:
             self.app = None
 
-    def set_filters(self, filters):
+    def process_filters(self, filters):
         d = OrderedDict()
         fs = self.check_filters(filters)
         ofs = self.order_filters(fs)
@@ -133,20 +132,10 @@ class Flarf(object):
         return [self.reflect_filter(f) for f in filters]
 
     def reflect_filter(self, afilter):
-        if isinstance(afilter, self.filter_cls):
-            return afilter
-        elif isinstance(afilter, dict):
+        if isinstance(afilter, dict):
             return self.filter_cls(**afilter)
         else:
-            raise FlarfError("""
-                            filter provided: {}\n
-                            param `filters` must be a list of:\n
-                            - instance of filter_cls given to Flarf extension\n
-                              (either default filter_cls: FlarfFilter or one\n
-                               given with extension intialization)\n
-                            - a dict of params for filter_cls\n
-                            Check that the filter is one of the above.
-                            """.format(afilter))
+            return afilter
 
     def order_filters(self, filters):
         return sorted(filters, key=attrgetter('filter_precedence'))
