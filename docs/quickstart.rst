@@ -4,6 +4,9 @@ Quick Start
 Requirements: Flask(>v0.9)::
 
 
+    app.py:
+    ------
+
     from flask import Flask
     from flask.ext.flarf import Flarf, FlarFilter
 
@@ -18,7 +21,7 @@ Requirements: Flask(>v0.9)::
                           request.path.upper(),
                           request.args)
 
-    flarf_filter = FlarfFilter(filter_tag='flarf_filter',
+    flarf_filter = FlarfFilter(filter_tag='my_first_filter',
                                filter_params=[format_from_request],
                                filter_on=['includeme'])
 
@@ -29,6 +32,8 @@ Requirements: Flask(>v0.9)::
     def index():
         return render_template("index.html")
 
-    index.html:
 
-    MY_REQUEST: {{ flarf_ctx('flarf_filter').format_from_request }}
+    index.html:
+    -----------
+
+    MY_FIRST_FILTER: {{ my_first_filter.format_from_request  }}
