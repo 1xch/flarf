@@ -23,17 +23,42 @@ class FlarfFilter(object):
                                 method on the filter class that take request as
                                 an argument. Passed in functions must take request
                                 as a single argument.
-                                On filter run params are run in order of:
-                                   - if a function
-                                   - if an attribute of flask request
-                                   - if in request.values, request.form,
+                                On filter run params are run in order supplied
+                                where param indicates:
+                                   - a function
+                                   - an attribute of flask request
+                                   - a "get_var" method on the filter where
+                                     'var' is the variable you'd like the filter
+                                     to capture or generate
+                                   - in request.values, request.form,
                                      and request.files
-                                If not found, the param will be set on the filter
-                                as an attr of None.
     :param filter_on:           A list of routes to use the filter on, default
                                 is ['all'], except static routes
     :param filter_skip:         A list routes to pass and not use filter.
                                 By default, all static routes are skipped
+
+    use:
+
+    my_filter = FlarfFilter('my_filter', filter_params=['values', 'my_id'])
+
+    my_filter is then available after request as g.my_filter or in templates as
+    {{my_filter}} with the attributes my_filter.values & my_filter.my_id where
+    values is request.values, and my_id is from request.values, request.view_args,
+    or request.files and is None if not available
+
+    To customize a specific instance,
+
+    class MyFilter(FlarfFilter):
+        def __init__(self, **kwargs):
+            super(MyFilter, self).__init__(**kwargs)
+        def get_post(self, request):
+            return make_db_request(request.args.post_id)
+
+    m = MyFilter("my_custom_filter")
+
+    When m is passed to the extension and used on request, you will have
+    my_custom_filter.post available with your exact post where post_id is
+    supplied as an arg
     """
     def __init__(self,
                  filter_tag,
@@ -68,7 +93,7 @@ class FlarfFilter(object):
         return {self.filter_tag: ctx_prc(self.filter_tag)}
 
     def param_request(self, param, request):
-        return getattr(request, param)
+        return getattr(request, param, None)
 
     def param_param(self, param, request):
         p = filter(None, [request.values.get(param, None),
@@ -99,6 +124,20 @@ class Flarf(object):
                                 FlarfFilter, used when receiving dicts as filters
     :param filters:             A list of filter instances(or dicts mappable
                                 to filter_cls instances) to be run per request.
+
+    use as part of your application construction:
+
+    from flask import Flask
+    app = Flask(__name__)
+
+    Flarf(app, filters=[m])  # where m is an instance of MyFilter above
+
+    @app.route("/")
+    def hello():
+        return "Hello World!"
+
+    if __name__ == "__main__":
+        app.run()
     """
     def __init__(self,
                  app=None,
