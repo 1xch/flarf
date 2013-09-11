@@ -1,6 +1,17 @@
 Flask-Flarf Changelog
 ========================
 
+Version 0.0.4
+-------------
+
+Released September 10th 2013
+
+- simplification of filter/filtered to one filter placed on g
+- params are set as an ordered dict in filter(ordered dict of partial methods based on inference at init)
+- allow for specifying methods on class as a filter param using "get_(paramname)" in subclassed filter 
+- context prcessor based on filter tag
+
+
 Version 0.0.3
 -------------
 

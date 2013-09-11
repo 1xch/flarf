@@ -1,116 +1,112 @@
 from collections import OrderedDict
-from flask import Blueprint, g, _request_ctx_stack, current_app
+from flask import Blueprint, g, _request_ctx_stack, current_app, request
 from werkzeug import LocalProxy
 from operator import attrgetter
 from types import FunctionType
+from functools import partial
 
-
-_fs = LocalProxy(lambda: current_app.extensions['flarf'].filters)
-
-
-class FlarfFiltered(dict):
-    def __getattr__(self, attr):
-        return self.get(attr, None)
-    __setattr__= dict.__setitem__
-    __delattr__= dict.__delitem__
-    def __iter__(self):
-        return dict.__iter__(self)
-    def __len__(self):
-        return dict.__len__(self)
-    def __contains__(self, x):
-        return dict.__contains__(self, x)
-
+fs = LocalProxy(lambda: current_app.extensions['flarf'].filters)
 
 class FlarfFilter(object):
     """
-    A single instance of a filter
+    A class used to instance a filter result on application request
 
     :param filter_tag:          The name of the filter
     :param filter_precedence:   If you need to order your filters in some way,
                                 set this as an integer, defaults to 100.
                                 Filters will be ordered from smallest number to
                                 largest
-    :param filtered_cls:        The class used for recording the info from the
-                                filter. Default is FlarfFiltered
-    :param filter_params:       A list of params used by the filter on request.
-                                Strings must be attributes of request, functions
-                                must take request as a single argument.
-    :param filter_on:           Which routes to use the filter on.
-    :param filter_skip:         Which routes to skip and to NOT use the filter.
+    :param filter_params:       A list of paramaters used by the filter on request.
+                                May be strings or functions. Strings must be
+                                attributes of request, found within (request.values,
+                                request.form, or request.files) or reference a
+                                method on the filter class that take request as
+                                an argument. Passed in functions must take request
+                                as a single argument.
+                                On filter run params are run in order of:
+                                   - if a function
+                                   - if an attribute of flask request
+                                   - if in request.values, request.form,
+                                     and request.files
+                                If not found, the param will be set on the filter
+                                as an attr of None.
+    :param filter_on:           A list of routes to use the filter on, default
+                                is ['all'], except static routes
+    :param filter_skip:         A list routes to pass and not use filter.
+                                By default, all static routes are skipped
     """
     def __init__(self,
-                 filter_tag=None,
+                 filter_tag,
                  filter_precedence=100,
-                 filtered_cls=FlarfFiltered,
                  filter_params=None,
                  filter_on=['all'],
                  filter_skip=None):
         self.filter_tag = filter_tag
         self.filter_precedence = filter_precedence
-        self.filtered_cls = filtered_cls
-        self.filter_params = filter_params
+        self.filter_params = self.set_params(filter_params)
         self.filter_on = filter_on
         self.filter_pass = ['static']
         if filter_skip:
             self.filter_pass.extend(filter_skip)
 
-    def filter_param(self, param, request):
-        if isinstance(param, FunctionType):
-            setattr(self.filtered, param.__name__, param(request))
+    def set_params(self, params):
+        d = OrderedDict()
+        for p in params:
+            if isinstance(p, FunctionType):
+                d[p.__name__] = p
+            elif p[:4] == 'get_':
+                d[p[4:]] = partial(getattr(self, p))
+            elif hasattr(request, p):
+                d[p] = partial(getattr(self, 'param_request'), p)
+            else:
+                d[p] = partial(getattr(self, 'param_param'), p)
+        return d
+
+    def get_ctx_prc(self):
+        def ctx_prc(tag):
+            return getattr(g, tag, None)
+        return {self.filter_tag: ctx_prc(self.filter_tag)}
+
+    def param_request(self, param, request):
+        return getattr(request, param)
+
+    def param_param(self, param, request):
+        p = filter(None, [request.values.get(param, None),
+                          request.view_args.get(param, None),
+                          request.files.get(param, None)])
+        if p:
+            return p.pop()
         else:
-            setattr(self.filtered, param, getattr(request, param, None))
+            return None
 
     def filter_by_param(self, request):
-        for param in self.filter_params:
-            self.filter_param(param, request)
+        for k, v in self.filter_params.items():
+            setattr(self, k, v(request))
 
     def filter_request(self, request):
-        self.filtered = self.filtered_cls()
         self.filter_by_param(request)
-        setattr(g, self.filter_tag, self.filtered)
-
-
-def flarf_run_filters():
-    """
-    A before_request function registered on the application that runs each filter.
-    """
-    r = _request_ctx_stack.top.request
-    if r.url_rule:
-        request_endpoint = str(r.endpoint).rsplit('.')[-1]
-        for f in _fs.values():
-            if request_endpoint not in f.filter_pass:
-                if request_endpoint or 'all' in f.filter_on:
-                    rv = f.filter_request(r)
-                    if rv:
-                        return rv
-
-def flarf_ctx_processor():
-    """
-    Context processor which makes the filtered info available inside a template.
-    """
-    def flarf_ctx(which_filter):
-        return getattr(g, which_filter, None)
-    return dict(flarf_ctx=flarf_ctx)
+        setattr(g, self.filter_tag, self)
 
 
 class Flarf(object):
     """
-    The Flarf extension object.
+    The Flarf extension object to registered with a Flask application.
 
     :param app:                 The application to register the function on.
     :param before_request_func: The before request function to run the filters.
-                                Defaults to flarf_run_filters
+                                Defaults to self.flarf_run_filters
+    :param filter_cls:          The class used as a filter, defaults to
+                                FlarfFilter, used when receiving dicts as filters
     :param filters:             A list of filter instances(or dicts mappable
-                                to filter instances) to be run per request.
+                                to filter_cls instances) to be run per request.
     """
-
     def __init__(self,
                  app=None,
-                 before_request_func=flarf_run_filters,
+                 before_request_func=None,
                  filter_cls=FlarfFilter,
                  filters=None):
         self.app = app
-        self.before_request_func = before_request_func
+        self.before_request_func = self.set_before_request_func(before_request_func)
         self.filter_cls = filter_cls
         self.filters = self.process_filters(filters)
 
@@ -119,6 +115,12 @@ class Flarf(object):
             self.init_app(self.app)
         else:
             self.app = None
+
+    def set_before_request_func(self, before_request_func):
+        if before_request_func:
+            return before_request_func
+        else:
+            return self.flarf_run_filters
 
     def process_filters(self, filters):
         d = OrderedDict()
@@ -140,7 +142,25 @@ class Flarf(object):
     def order_filters(self, filters):
         return sorted(filters, key=attrgetter('filter_precedence'))
 
+    def init_context_processors(self, app):
+        for f in self.filters.values():
+           app.context_processor(f.get_ctx_prc)
+
     def init_app(self, app):
         app.before_request(self.before_request_func)
-        app.context_processor(flarf_ctx_processor)
+        self.init_context_processors(app)
         app.extensions['flarf'] = self
+
+    def flarf_run_filters(self):
+        """
+        A before_request function registered on the extension that runs each filter.
+        """
+        r = _request_ctx_stack.top.request
+        if r.url_rule:
+            request_endpoint = str(r.endpoint).rsplit('.')[-1]
+            for f in self.filters.values():
+                if request_endpoint not in f.filter_pass:
+                    if request_endpoint or 'all' in f.filter_on:
+                        rv = f.filter_request(r)
+                        if rv:
+                            return rv
