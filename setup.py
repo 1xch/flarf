@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name='Flask-Flarf',
-    version='0.0.3',
+    version='0.0.4',
     url='https://github.com/thrisp/flarf',
     license='MIT',
     author='Thrisp/Hurrata',
