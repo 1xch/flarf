@@ -13,9 +13,13 @@ class FlarfTestCase(unittest.TestCase):
             def __init__(self, something_custom="NOTHING", **kwargs):
                 self.something_custom = something_custom
                 super(CustomFilter, self).__init__(**kwargs)
+            def get_something(self, request):
+                return "something"
             def filter_request(self, request):
                 setattr(g, 'custom_filter_run', True)
-                setattr(g, self.filter_tag, self.something_custom)
+                self.filter_by_param(request)
+                setattr(g, self.filter_tag, self)
+                #setattr(g, self.filter_tag, self.something_custom)
                 return redirect('/')
         def path_to_upper(request):
             return request.path.upper()
@@ -23,28 +27,32 @@ class FlarfTestCase(unittest.TestCase):
         self.custom_filter = CustomFilter
         test_filter1 = FlarfFilter(filter_tag='test_filter1',
                                    filter_precedence=100,
-                                   filter_params=['path', path_to_upper],
-                                   filter_on=['includeme'])
+                                   filter_params=['request_path', path_to_upper])
         test_filter2 = FlarfFilter(filter_tag='test_filter2',
                                    filter_precedence=200,
-                                   filter_params=['values', 'yod', 'zed'])
+                                   filter_params=['request_values', 'yod', 'zed'])
         test_filter3 = {'filter_tag': 'test_filter3',
                         'filter_precedence': 300,
-                        'filter_params': ['path', 'args'],
-                        'filter_skip':['passme']}
+                        'filter_params': ['request_path', 'args']}
         test_filter4 = CustomFilter(filter_tag='test_filter4',
                                     filter_precedence=100,
-                                    filter_params=['path', path_to_upper],
-                                    filter_on=['app_route'],
+                                    filter_params=['request_path', path_to_upper, 'get_something'],
+                                    filter_on=['/', 'app_route'],
                                     something_custom="I am test filter 4")
         test_filter5 = {'filter_tag': 'test_filter5',
                         'filter_precedence': 300,
-                        'filter_params': ['path', 'args'],
-                        'filter_skip':['passme'],
+                        'filter_params': ['request_path', 'request_args'],
+                        'filter_pass':['passme'],
                         'something_custom': 'I am test filter 5'}
+        test_filter6 = {'filter_tag': 'test_filter6',
+                        'filter_precedence': 400,
+                        'filter_params': ['request_path', 'request_args'],
+                        'filter_pass': ['test_app_route', '/app_route'],
+                        'filter_on':['/includeme', 'test_index']}
         self.test_filters1 = [test_filter1]
         self.test_filters2 = [test_filter1, test_filter2, test_filter3]
-        self.test_filters3 = [test_filter4, test_filter5]
+        self.test_filters3 = [test_filter4]
+        self.test_filters4 = [test_filter6]
         pre_app = Flask(__name__)
         @pre_app.route('/')
         def test_index():
@@ -80,7 +88,7 @@ class FlarfTestCase(unittest.TestCase):
             self.assertEqual(getattr(g, 'test_filter3', None),
                              getattr(g, 'test_filter3', None))
             self.assertEqual(g.test_filter1.path_to_upper, u'/APP_ROUTE')
-            #self.assertEqual(u'/app_route', g.test_filter3.path)
+            self.assertEqual(u'/app_route', g.test_filter3.path)
             self.assertEqual(g.test_filter1.path,
                              g.test_filter3.path)
 
@@ -104,6 +112,7 @@ class FlarfTestCase(unittest.TestCase):
         with self.pre_app.test_request_context('/'):
             self.pre_app.preprocess_request()
             self.assertTrue(g.custom_filter_run)
+            self.assertEqual('something', g.test_filter4.something)
         with self.pre_app.test_client() as ct:
             rv = ct.get('/app_route')
             self.assertEqual(rv.status_code, 302)
@@ -112,21 +121,21 @@ class FlarfTestCase(unittest.TestCase):
         @self.pre_app.route('/includeme')
         def includeme():
             return g.__dict__
-        Flarf(self.pre_app, filters=self.test_filters2)
+        Flarf(self.pre_app, filters=self.test_filters4)
         with self.pre_app.test_request_context('/includeme'):
             self.pre_app.preprocess_request()
-            #self.assertTrue(g.test_filter1.path)
-            #self.assertEqual(g.test_filter1.path, u'/includeme')
+            self.assertTrue(g.test_filter6.path)
+            self.assertEqual(g.test_filter6.path, u'/includeme')
 
     def test_exclude_route(self):
         @self.pre_app.route('/passme')
         def passme():
             return g.__dict__
-        Flarf(self.pre_app, filters=self.test_filters2)
+        Flarf(self.pre_app, filters=self.test_filters4)
         with self.pre_app.test_request_context('/passme'):
             self.pre_app.preprocess_request()
             with self.assertRaises(AttributeError):
-                g.test_filter3
+                g.test_filter4
 
 if __name__ == '__main__':
     unittest.main()

@@ -2,7 +2,10 @@ Flask request filter
 
 Flarf allows you to filter flask request to your specification within your application.
 
-Example for example purposes only: 
+Example for example purposes only (see example app in examples directory): 
+
+    example.py:
+    ------
 
     from flask import Flask
     from flask.ext.flarf import Flarf, FlarFilter
@@ -13,8 +16,8 @@ Example for example purposes only:
                header: {}\n
                METHOD: {}\n
                ARGS: {}\n
-               """.format(request.header.upper(),
-                          request.header,
+               """.format(request.headers.upper(),
+                          request.headers,
                           request.method.lower(),
                           request.args)
 
@@ -29,27 +32,13 @@ Example for example purposes only:
     def index():
        return render_template("index.html")
 
+
     index.html:
+    ----------
 
     MY_VAL: {{flarf_filter.my_val|safe}}
     MY_REQUEST: {{ flarf_filter.format_from_request|safe}}
 
-    When the app is run and you visit http://127.0.0.1:5000/includeme?my_val="helloworld"
-    you will see:
-
-    MY_VAL:
-
-    helloworld
-
-    MY_REQUEST:
-
-    HEADER: COOKIE: __UTMA=96992031.807875357.1375109666.1375109749.1375109749.1; __UTMZ=96992031.1375109749.1.1.UTMCSR=(DIRECT)|UTMCCN=(DIRECT)|UTMCMD=(NONE) CONTENT-LENGTH: USER-AGENT: MOZILLA/5.0 (WINDOWS NT 6.1; WOW64; RV:22.0) GECKO/20100101 FIREFOX/22.0 CONNECTION: KEEP-ALIVE DNT: 1 HOST: 127.0.0.1:5000 CACHE-CONTROL: MAX-AGE=0 ACCEPT: TEXT/HTML,APPLICATION/XHTML+XML,APPLICATION/XML;Q=0.9,*/*;Q=0.8 ACCEPT-LANGUAGE: EN-US,EN;Q=0.5 CONTENT-TYPE: ACCEPT-ENCODING: GZIP, DEFLATE
-
-    header: Cookie: __utma=96992031.807875357.1375109666.1375109749.1375109749.1; __utmz=96992031.1375109749.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none) Content-Length: User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:22.0) Gecko/20100101 Firefox/22.0 Connection: keep-alive Dnt: 1 Host: 127.0.0.1:5000 Cache-Control: max-age=0 Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8 Accept-Language: en-US,en;q=0.5 Content-Type: Accept-Encoding: gzip, deflate
-
-    METHOD: get
-
-    ARGS: ImmutableMultiDict([('my_val', u'derp')])  
-
+    Run the app and visit: http://127.0.0.1:5000/includeme?my_val="helloworld" 
 
 Suggestions, input, & improvements welcomed.
