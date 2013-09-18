@@ -33,7 +33,7 @@ class FlarfFilter(object):
                                      request.form, or request.files
     :param filter_on:           A list of routes to use the filter on, default
                                 is ['all'], except static routes
-    :param filter_pass:         A list routes/endpoints to pass over and not
+    :param filter_skip:         A list routes/endpoints to pass over and not
                                 use filter. By default, all static routes are
                                 skipped
     """
@@ -106,6 +106,9 @@ class FlarfFilter(object):
     def filter_request(self, request):
         self.filter_by_param(request)
         setattr(g, self.filter_tag, self)
+
+    def no_filter(self):
+        setattr(g, self.filter_tag, None)
 
 
 class Flarf(object):
