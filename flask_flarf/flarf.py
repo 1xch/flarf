@@ -5,10 +5,25 @@ from functools import partial
 from collections import OrderedDict
 from werkzeug import LocalProxy
 from flask import Blueprint, g, _request_ctx_stack, current_app
-
+import pprint
 
 fs = LocalProxy(lambda: current_app.extensions['flarf'].filters)
 
+#class MyMeta(type):
+#    def __new__(meta, name, bases, dct):
+#        print '-----------------------------------'
+#        print "Allocating memory for class", name
+#        print "meta:{}".format(meta)
+#        print bases
+#        pprint.pprint(dct)
+#        return super(MyMeta, meta).__new__(meta, name, bases, dct)
+#    def __init__(cls, name, bases, dct):
+#        print '-----------------------------------'
+#        print "Initializing class", name
+#        print cls
+#        print bases
+#        pprint.pprint(dct)
+#        super(MyMeta, cls).__init__(name, bases, dct)
 
 class FlarfFilter(object):
     """
@@ -37,6 +52,8 @@ class FlarfFilter(object):
                                 use filter. By default, all static routes are
                                 skipped
     """
+    #__metaclass__ = MyMeta
+
     def __init__(self,
                  filter_tag,
                  filter_precedence=100,
@@ -106,9 +123,6 @@ class FlarfFilter(object):
     def filter_request(self, request):
         self.filter_by_param(request)
         setattr(g, self.filter_tag, self)
-
-    def no_filter(self):
-        setattr(g, self.filter_tag, None)
 
 
 class Flarf(object):
