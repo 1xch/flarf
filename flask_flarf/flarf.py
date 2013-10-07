@@ -9,21 +9,12 @@ import pprint
 
 fs = LocalProxy(lambda: current_app.extensions['flarf'].filters)
 
-#class MyMeta(type):
-#    def __new__(meta, name, bases, dct):
-#        print '-----------------------------------'
-#        print "Allocating memory for class", name
-#        print "meta:{}".format(meta)
-#        print bases
-#        pprint.pprint(dct)
-#        return super(MyMeta, meta).__new__(meta, name, bases, dct)
-#    def __init__(cls, name, bases, dct):
-#        print '-----------------------------------'
-#        print "Initializing class", name
-#        print cls
-#        print bases
-#        pprint.pprint(dct)
-#        super(MyMeta, cls).__init__(name, bases, dct)
+_rp = LocalProxy(lambda: _endpoints(_request_ctx_stack.top.request))
+
+
+def _endpoints(r):
+    return (str(r.endpoint).rsplit('.')[-1], r.endpoint.rsplit(':')[-1], r.path)
+
 
 class FlarfFilter(object):
     """
@@ -52,8 +43,6 @@ class FlarfFilter(object):
                                 use filter. By default, all static routes are
                                 skipped
     """
-    #__metaclass__ = MyMeta
-
     def __init__(self,
                  filter_tag,
                  filter_precedence=100,
@@ -187,11 +176,9 @@ class Flarf(object):
         app.extensions['flarf'] = self
 
     def flarf_run_filters(self):
-        r = _request_ctx_stack.top.request
-        request_points = [str(r.endpoint).rsplit('.')[-1], r.path]
         for f in self.filters.values():
-            if not any([f.filter_pass.match(ff) for ff in request_points]):
-                if f.filter_on.match('all') or any([f.filter_on.match(ff) for ff in request_points]):
-                    rv = f.filter_request(r)
+            if not any([f.filter_pass.match(ff) for ff in _rp]):
+                if f.filter_on.match('all') or any([f.filter_on.match(ff) for ff in _rp]):
+                    rv = f.filter_request(_request_ctx_stack.top.request)
                     if rv:
                         return rv
