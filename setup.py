@@ -21,6 +21,10 @@ setup(
     install_requires=[
         'Flask>=0.9'
     ],
+    test_suite='nose.collector',
+    tests_require=[
+        'nose',
+        'blinker'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',

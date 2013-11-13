@@ -7,8 +7,8 @@ from werkzeug import LocalProxy
 from flask import Blueprint, g, _request_ctx_stack, current_app
 import pprint
 
-fs = LocalProxy(lambda: current_app.extensions['flarf'].filters)
 
+fs = LocalProxy(lambda: current_app.extensions['flarf'].filters)
 _rp = LocalProxy(lambda: _endpoints(_request_ctx_stack.top.request))
 
 
