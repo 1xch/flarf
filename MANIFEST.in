@@ -1,1 +1,3 @@
 include tests/*.py
+include CHANGES
+include LICENSE

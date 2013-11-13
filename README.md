@@ -1,6 +1,7 @@
 Flask request filter
 
-Flarf allows you to filter flask request to your specification within your application.
+Flarf allows you to filter flask request to your specification within your application,
+providing convenient access in your appplication and templates.
 
 Example for example purposes only (see example app in examples directory): 
 
@@ -12,9 +13,9 @@ Example for example purposes only (see example app in examples directory):
 
     def format_from_request(request):
         return """
-               HEADER: {}\n
+               <h1>HEADER: {}</h1>\n
                header: {}\n
-               METHOD: {}\n
+               <h1>METHOD: {}</h1>\n
                ARGS: {}\n
                """.format(request.headers.upper(),
                           request.headers,
@@ -36,8 +37,8 @@ Example for example purposes only (see example app in examples directory):
     index.html:
     ----------
 
-    MY_VAL: {{flarf_filter.my_val|safe}}
-    MY_REQUEST: {{ flarf_filter.format_from_request|safe}}
+    MY_VAL: {{ flarf_filter.my_val | safe }}
+    MY_REQUEST: {{ flarf_filter.format_from_request | safe }}
 
     Run the app and visit: http://127.0.0.1:5000/includeme?my_val="helloworld" 
 
