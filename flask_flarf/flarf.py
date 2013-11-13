@@ -97,11 +97,11 @@ class FlarfFilter(object):
         return getattr(request, param)
 
     def param_param(self, param, request):
-        p = filter(None, [request.values.get(param, None),
-                          request.view_args.get(param, None),
-                          request.files.get(param, None)])
-        if p:
-            return p.pop()
+        p = [request.values.get(param, None),
+             request.view_args.get(param, None),
+             request.files.get(param, None)]
+        if any(p):
+            return list(filter(None, p)).pop()
         else:
             return None
 

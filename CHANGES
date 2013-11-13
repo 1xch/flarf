@@ -1,6 +1,15 @@
 Flask-Flarf Changelog
 ========================
 
+Version 0.0.6
+-------------
+
+Released November 13th 2013
+
+- updated to wheel package spec
+- updated testing
+
+
 Version 0.0.5
 -------------
 
@@ -9,6 +18,7 @@ Released September 12th 2013
 - determine param type/function on init as partial function and set to take only
   request on filter run
 - regex for filter_on & filter_pass
+
 
 Version 0.0.4
 -------------
