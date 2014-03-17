@@ -10,6 +10,7 @@ import pprint
 
 fs = LocalProxy(lambda: current_app.extensions['flarf'].filters)
 _rp = LocalProxy(lambda: _endpoints(_request_ctx_stack.top.request))
+_rerror = LocalProxy(lambda: _request_ctx_stack.top.request.routing_exception)
 
 
 def _endpoints(r):
@@ -176,9 +177,10 @@ class Flarf(object):
         app.extensions['flarf'] = self
 
     def flarf_run_filters(self):
-        for f in self.filters.values():
-            if not any([f.filter_pass.match(ff) for ff in _rp]):
-                if f.filter_on.match('all') or any([f.filter_on.match(ff) for ff in _rp]):
-                    rv = f.filter_request(_request_ctx_stack.top.request)
-                    if rv:
-                        return rv
+        if not _rerror:
+            for f in self.filters.values():
+                if not any([f.filter_pass.match(ff) for ff in _rp]):
+                    if f.filter_on.match('all') or any([f.filter_on.match(ff) for ff in _rp]):
+                        rv = f.filter_request(_request_ctx_stack.top.request)
+                        if rv:
+                            return rv
