@@ -1,4 +1,4 @@
-Flarf: Flask request filter
+Flarf: Flask Request Filter
 ===========================
 
 .. image:: https://secure.travis-ci.org/thrisp/flarf.png?branch=develop
