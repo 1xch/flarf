@@ -126,7 +126,6 @@ class Flarf(object):
                                 FlarfFilter, used when receiving dicts as filters
     :param filters:             A list of filter instances(or dicts mappable
                                 to filter_cls instances) to be run per request.
-
     """
     def __init__(self,
                  app=None,
