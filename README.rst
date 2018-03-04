@@ -3,15 +3,15 @@ Flarf: Flask Request Filter
 
 .. image:: https://secure.travis-ci.org/thrisp/flarf.png?branch=develop
 
-.. image:: https://pypip.in/v/Flask-Flarf/badge.png
+.. image:: https://img.shields.io/pypi/v/Flask-Flarf.svg
     :target: https://pypi.python.org/pypi/Flask-Flarf/
     :alt: Latest Version
 
-.. image:: https://pypip.in/d/Flask-Flarf/badge.png
+.. image:: https://img.shields.io/pypi/dm/Flask-Flarf.svg
     :target: https://pypi.python.org/pypi/Flask-Flarf/
     :alt: Downloads
 
-.. image:: https://pypip.in/license/Flask-Flarf/badge.png
+.. image:: https://img.shields.io/pypi/l/Flask-Flarf.svg
     :target: https://pypi.python.org/pypi/Flask-Flarf/
     :alt: License
 
